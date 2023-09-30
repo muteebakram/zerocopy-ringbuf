@@ -703,10 +703,8 @@ strcpy(char *s, const char *t)
 }
 
 int
-ringbuf(const char *name, int open, void **addr)
+ringbuf(const char *name, int open, uint64 addr)
 {
-  printf("my addr (uint64 *) : %p\n", (uint64 *)addr);
-  printf("my addr (uint64 **): %p\n", (uint64 **)addr);
   struct ringbuf *rb;
   int ringbuf_exists = 0, ringbuf_count = 0;
 
@@ -733,12 +731,12 @@ ringbuf(const char *name, int open, void **addr)
     printf("creating new ringbuf: %s\n", name);
     struct ringbuf new_ringbuf;
     new_ringbuf.refcount = 0;
-    memmove( (void *) new_ringbuf.name, (const void*) name, 16); // copy name
+    strcpy( (char *) new_ringbuf.name, (char *) name); // copy name
 
-    char *mem;
+    void *mem;
+    void **abs = new_ringbuf.buf;
     int count = 0;
     uint64 a, pg, base, va0;
-    uint64 ** ptr;
     struct proc *pr = myproc();
 
     // MAX virtual address - trampoline - trapframe - gurad page.
@@ -785,20 +783,44 @@ ringbuf(const char *name, int open, void **addr)
       
       // I do not have to touch the buffer.
       // I think i need because we need it to reallocate same pages for new process.
-      new_ringbuf.buf[i-1] = &mem; 
+      //new_ringbuf.buf[i-1] = mem; 
+      *(abs + i - 1) = mem;
     }
+    char *str = "Hello";
+    strcpy( (char *) mem, str);
 
     new_ringbuf.book = &va0 - (17 * PGSIZE);
-    ptr = (uint64 **)(va0 - PGSIZE);
-    addr = (void **)ptr;
+   //strcpy( (char *) new_ringbuf.buf[15], str);
+    printf("mem: %s\n", (char *) new_ringbuf.buf[15]);
+    uint64 temp = va0 - (16 * PGSIZE);
+    if(copyout(myproc()->pagetable, addr, (char*)&(temp), sizeof(uint64)) < 0) {
+      printf("Failed to perform copyout operation\n");
+      return -1;
+    }
+   
+    // Put the base of va0 to addr
+    // ptr = (uint64 **)(va0 - PGSIZE);
+    // addr =(uint64 **) ptr;
+    
+    // va_addr = PGROUNDDOWN((uint64) addr);
+    // pa_addr = walkaddr(pr->pagetable, va_addr);
+    // if(pa_addr == 0) {
+    //   printf("pa addr failed: %p\n", pa_addr);
+    //   return -1;
+    // }
 
+    // *addr = va0;
+    printf("before addr: %p, temp: %p, buf: %p\n", addr, temp, new_ringbuf.buf[0]);
+
+
+    // printf("pa addr: %p, **pa addr: %p\n", pa_addr, (uint64 **)pa_addr);
     // Question:  Not able to set the addr and return to userspace
     // Question:  we need to send physical address to userspace?
     // Question:  in buf of ringbuf struct we need to store physical addr of pages? If so for transimitting data we need to use PA right?
     // Question:  how to map twice? Is it two 32 byte chunks or 64 chunks?
     // Question:  user process panics at the return.
 
-    printf("book: %p, base: %p, addr: %p\n", new_ringbuf.book, base, ptr);
+    printf("book: %p, base: %p, addr: %p\n", new_ringbuf.book, base, (uint64 )addr);
     ringbufs[++ringbuf_count] = new_ringbuf;
   } else {
     // Already exists return the already mapped address space.

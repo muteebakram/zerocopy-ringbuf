@@ -11,15 +11,13 @@ sys_ringbuf(void)
 {
   int open;
   char name[16];
-  uint64 addr;
-  // uint64 *addr;
+  uint64 uaddr;
   
   argstr(0, name, 16);
   argint(1, &open);
-  argaddr(2, &addr);
-  // argaddr(2, addr);
+  argaddr(2, &uaddr);
 
-  return ringbuf(name, open, (void**) addr);
+  return ringbuf(name, open, uaddr);
 }
 
 uint64
