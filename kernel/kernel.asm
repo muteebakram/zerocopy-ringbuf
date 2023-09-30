@@ -5466,8 +5466,8 @@ ringbuf(const char *name, int open, uint64 addr)
     8000278a:	e00080e7          	jalr	-512(ra) # 80000586 <printf>
 
       // TODO handle unmap of previoous pages.
-      if(mappages(pr->pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_W) != 0){
-    8000278e:	4719                	li	a4,6
+      if(mappages(pr->pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_W|PTE_U|PTE_X) != 0){
+    8000278e:	4779                	li	a4,30
     80002790:	86a6                	mv	a3,s1
     80002792:	6605                	lui	a2,0x1
     80002794:	85ce                	mv	a1,s3

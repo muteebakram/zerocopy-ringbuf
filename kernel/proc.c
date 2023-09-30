@@ -771,7 +771,7 @@ ringbuf(const char *name, int open, uint64 addr)
       printf("allocated page i: %d, va: %p\n", i, a);
 
       // TODO handle unmap of previoous pages.
-      if(mappages(pr->pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_W) != 0){
+      if(mappages(pr->pagetable, a, PGSIZE, (uint64)mem, PTE_R|PTE_W|PTE_U|PTE_X) != 0){
         // printf("oops1\n");
         kfree(mem);
         // printf("oops2\n");
