@@ -7,6 +7,7 @@
 #include "kernel/syscall.h"
 #include "kernel/memlayout.h"
 #include "kernel/riscv.h"
+// #include "kernel/ringbuf.h"
 
 int main(int argc, char *argv[])
 {
@@ -18,7 +19,7 @@ int main(int argc, char *argv[])
     // ringbuf(name, 1, &buf2);
 
     printf("ringbuf: %p\n", (buf1));
-    printf("ringbuf: %s\n", (char *)buf1);
+    printf("ringbuf book page: %p\n", (buf1 - (16 *  4096)));
 
     printf("\ngoodbye\n");
     return 0;
