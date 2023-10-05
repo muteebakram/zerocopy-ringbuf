@@ -13,13 +13,16 @@ int main(int argc, char *argv[])
 {
     const char name[16] = "muteeb";
     uint64 buf1;
-    // uint64 buf2;
+    uint64 buf2;
 
     ringbuf(name, 1, &buf1);
-    // ringbuf(name, 1, &buf2);
+    ringbuf(name, 1, &buf2);
 
-    printf("ringbuf: %p\n", (buf1));
-    printf("ringbuf book page: %p\n", (buf1 - (16 *  4096)));
+    printf("ringbuf1: %p\n", (buf1));
+    printf("ringbuf1 book page: %p\n", (buf1 - (16 * 4096)));
+
+    printf("ringbuf2: %p\n", (buf2));
+    printf("ringbuf2 book page: %p\n", (buf2 - (16 * 4096)));
 
     printf("\ngoodbye\n");
     return 0;
