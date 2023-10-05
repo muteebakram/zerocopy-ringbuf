@@ -3,3 +3,9 @@
 *.sym
 *.d
 _*
+fs.img
+kernel/kernel
+mkfs/mkfs
+user/initcode
+user/initcode.out
+user/usys.S

@@ -7,8 +7,6 @@
 #include "defs.h"
 #include "ringbuf.h"
 
-int ringbuf_count;
-
 int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contiguous_pages)
 {
   uint64 va, pa;
@@ -102,7 +100,7 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
     memset(mem, 0, PGSIZE);
     if (rb->refcount == 0)
     {
-      // Store physical address to first ringbuf.
+      // Store physical address for first ringbuf.
       rb->buf[i] = mem;
       pa = (uint64)mem;
     }
@@ -116,13 +114,14 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
     if (mappages(pr->pagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_U | PTE_X) != 0)
     {
       printf("Error: Failed to map page %d of va: %p\n", i, va);
-      kfree(mem);
+      kfree((void *)pa);
       uvmdealloc(pr->pagetable, va, PGSIZE);
       release(&ringbuf_lock);
       return -1;
     }
 
-    printf("Allocated virtual page %d to process. va: %p, pa: %p\n", i, va, pa);
+    // TODO process size is not increasing.
+    printf("Allocated virtual page %d. va: %p, pa: %p, proc->sz: %d\n", i, va, pa, pr->sz);
   }
 
   return 0;
@@ -144,10 +143,35 @@ int copyout_user_addr(uint64 base_va, uint64 user_addr)
   return 0;
 }
 
+int get_ringbuf_index()
+{
+  struct ringbuf *rb;
+  int ringbuf_count = 0;
+
+  for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
+    if (strncmp(rb->name, "", RINGBUF_NAME_LEN) != 0)
+      ringbuf_count++;
+
+  return ringbuf_count;
+}
+
+// TODO use this function
+int get_ringbuf_by_name(struct ringbuf *rb, const char *name)
+{
+  // Find the particular ringbuf with name.
+  for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
+    if (strncmp(rb->name, name, RINGBUF_NAME_LEN) == 0)
+    {
+      return 0;
+    }
+
+  return -1;
+}
+
 int create_ringbuf(const char *name, uint64 addr)
 {
   uint64 base_va, book_va;
-  int num_contiguous_pages = 18; // 18 pages = 1 guard page + 16 pages + 1 book page.
+  int ringbuf_index = 0, num_contiguous_pages = 18; // 18 pages = 1 guard page + 16 pages + 1 book page.
 
   // Get my process to map va to it's pagetable.
   struct proc *pr = myproc();
@@ -189,35 +213,32 @@ int create_ringbuf(const char *name, uint64 addr)
     return -1;
   }
 
-  new_ringbuf.refcount += 1;
-  ringbufs[++ringbuf_count] = new_ringbuf;
+  ringbuf_index = get_ringbuf_index();
 
-  printf("Successfully created ringbuf %d of name %s.\n", ringbuf_count, name);
+  new_ringbuf.refcount += 1;
+  ringbufs[ringbuf_index] = new_ringbuf;
+
+  printf("Successfully created ringbuf %d of name %s.\n", ringbuf_index, name);
   release(&ringbuf_lock);
   return 0;
 }
 
 int append_ringbuf(const char *name, uint64 addr)
 {
-  printf("Appending to ringbuf name '%s'\n", name);
-
   struct ringbuf *rb;
   int ringbuf_found = 0, num_contiguous_pages = 18; // 18 pages = 1 guard page + 16 pages + 1 book page.
 
+  struct proc *pr = myproc(); // Get my process to map va to it's pagetable.
   uint64 base_va, book_va;
 
-  // Get my process to map va to it's pagetable.
-  struct proc *pr = myproc();
-
+  // TODO use get_ringbuf_by_name instead of repeated for loops.
   // Find the particular ringbuf with name.
   for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
-  {
     if (strncmp(rb->name, name, RINGBUF_NAME_LEN) == 0)
     {
       ringbuf_found = 1;
       break;
     }
-  }
 
   if (!ringbuf_found)
   {
@@ -225,6 +246,7 @@ int append_ringbuf(const char *name, uint64 addr)
     return -1;
   }
 
+  printf("Appending to ringbuf name '%s'\n", rb->name);
   if (find_contiguous_pages(pr->pagetable, &base_va, num_contiguous_pages) != 0)
   {
     printf("Error: Could not find %d contiguous for '%s' ringbuf.", num_contiguous_pages, name);
@@ -256,21 +278,67 @@ int append_ringbuf(const char *name, uint64 addr)
   return 0;
 }
 
+int unmap_ringbuf(const char *name, uint64 addr)
+{
+  struct ringbuf *rb;
+  int ringbuf_found = 0, ringbuf_count;
+
+  ringbuf_count = get_ringbuf_index();
+  for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
+  {
+    if (strncmp(rb->name, name, RINGBUF_NAME_LEN) == 0)
+    {
+      ringbuf_found = 1;
+      break;
+    }
+  }
+
+  if (!ringbuf_found)
+  {
+    printf("Error: Could not find ringbuf %s.\n", name);
+    return -1;
+  }
+
+  // Get my process to map va to it's pagetable.
+  struct proc *pr = myproc();
+  printf("Unmapping ringbuf %d '%s' from process. proc sz: %d\n", ringbuf_count, rb->name, pr->sz);
+
+  // TODO unmapping pages is nothing but freeing proc size?
+  // Remove 16 contigious pages from the process pagetables.
+  // uvmfree(pr->pagetable, PGSIZE);
+
+  rb->refcount--;
+
+  if (rb->refcount <= 0)
+  {
+    // Reset name to empty.
+    strncpy((char *)rb->name, (char *)"", RINGBUF_NAME_LEN);
+
+    // Set buf to zero to clear physical memory address.
+    for (int i = 0; i < RINGBUF_SIZE; i++)
+      rb->buf[i] = 0;
+
+    // Delete the reference to book.
+    rb->book = 0;
+    printf("Deleted ringbuf %d from ringbufs.\n", ringbuf_count);
+  }
+
+  return 0;
+}
+
 int ringbuf(const char *name, int open, uint64 addr)
 {
   struct ringbuf *rb;
-  int ringbuf_exists = 0;
+  int ringbuf_exists = 0, ringbuf_count = 0;
 
   // Step 1: Check if maximum ringbuf are already allocated.
-  for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
-    if (strncmp(rb->name, "", RINGBUF_NAME_LEN) != 0)
-      ringbuf_count++;
-
+  ringbuf_count = get_ringbuf_index();
   if (ringbuf_count >= MAX_RINGBUFS)
   {
-    printf("Maximum # of ringbuf are allocated. Ringbufs count: %d\n", ringbuf_lock);
+    printf("Maximum # of ringbuf are allocated. Ringbufs count: %d\n", ringbuf_count);
     return -1;
   }
+  printf("\nCurrent number of ringbufs: %d\n", ringbuf_count);
 
   // Step 2: Check if ringbuf already exists else create or append ringbufs.
   for (rb = ringbufs; rb < &ringbufs[MAX_RINGBUFS]; rb++)
@@ -282,15 +350,27 @@ int ringbuf(const char *name, int open, uint64 addr)
     }
   }
 
-  if (!ringbuf_exists && create_ringbuf(name, addr) != 0)
+  if (open)
   {
-    printf("Error: Failed to create new ringbuf: %s\n", name);
-    return -1;
+    if (!ringbuf_exists && create_ringbuf(name, addr) != 0)
+    {
+      printf("Error: Failed to create new ringbuf '%s'\n", name);
+      return -1;
+    }
+    else if (ringbuf_exists && append_ringbuf(name, addr) != 0)
+    {
+      printf("Error: Failed to append to ringbuf '%s'\n", name);
+      return -1;
+    }
   }
-  else if (ringbuf_exists && append_ringbuf(name, addr) != 0)
+  else
   {
-    printf("Error: Failed to append to ringbuf: %s\n", name);
-    return -1;
+    // Delete/Unmap the ringbuf from the user.
+    if (unmap_ringbuf(name, addr) != 0)
+    {
+      printf("Error: Failed to unmap ringbuf '%s'\n", name);
+      return -1;
+    }
   }
 
   return 0;
