@@ -23,7 +23,7 @@ int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contig
     {
       // Physical address is not mapped and can be used to page allocation.
       ++count;
-      printf("Found %d contiguous virtual pages. va: %p\n", count, va);
+      // printf("Found %d contiguous virtual pages. va: %p\n", count, va);
       if (count == num_contiguous_pages)
       {
         printf("Found %d contiguous virtual pages.\nStart: %p, End: %p\n", count, *base_va, va);

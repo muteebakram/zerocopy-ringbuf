@@ -15,7 +15,10 @@
 int main()
 {
     printf("Running rb...\n");
-    int ret = ringbuf_open();
-    printf("ringbuf_open: %d\n", ret);
+    int rd = ringbuf_open();
+    printf("ringbuf_open rd: %d\n", rd);
+
+    int ret = ringbuf_close(rd);
+    printf("ringbuf_close ret: %d\n", ret);
     return ret;
 }

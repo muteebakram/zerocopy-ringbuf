@@ -1,3 +1,5 @@
+#define MAX_USR_RINGBUF 10
+
 struct user_ring_buf
 {
   void *buf;
