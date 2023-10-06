@@ -11,12 +11,17 @@ sys_ringbuf(void)
 {
   int open;
   char name[16];
-  uint64 uaddr;
-  
+  uint64 addr = 0;
+  uint64 *uaddr = &addr;
+
   argstr(0, name, 16);
   argint(1, &open);
-  argaddr(2, &uaddr);
+  arguint64(2, uaddr);
 
+  // uint64 p = uaddr;
+  printf("sysproc name: %s\n", name);
+  printf("sysproc open: %p\n", open);
+  printf("sysproc uaddr: %p\n", *uaddr);
   return ringbuf(name, open, uaddr);
 }
 
@@ -26,7 +31,7 @@ sys_exit(void)
   int n;
   argint(0, &n);
   exit(n);
-  return 0;  // not reached
+  return 0; // not reached
 }
 
 uint64
@@ -57,7 +62,7 @@ sys_sbrk(void)
 
   argint(0, &n);
   addr = myproc()->sz;
-  if(growproc(n) < 0)
+  if (growproc(n) < 0)
     return -1;
   return addr;
 }
@@ -71,8 +76,10 @@ sys_sleep(void)
   argint(0, &n);
   acquire(&tickslock);
   ticks0 = ticks;
-  while(ticks - ticks0 < n){
-    if(killed(myproc())){
+  while (ticks - ticks0 < n)
+  {
+    if (killed(myproc()))
+    {
       release(&tickslock);
       return -1;
     }

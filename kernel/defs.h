@@ -106,7 +106,7 @@ void            yield(void);
 int             either_copyout(int user_dst, uint64 dst, void *src, uint64 len);
 int             either_copyin(void *dst, int user_src, uint64 src, uint64 len);
 void            procdump(void);
-int             ringbuf(const char *name, int open, uint64 addr);
+int             ringbuf(const char *name, int open, uint64 *addr);
 
 // swtch.S
 void            swtch(struct context*, struct context*);
@@ -136,6 +136,7 @@ char*           strncpy(char*, const char*, int);
 
 // syscall.c
 void            argint(int, int*);
+void            arguint64(int, uint64*);
 int             argstr(int, char*, int);
 void            argaddr(int, uint64 *);
 int             fetchstr(uint64, char*, int);
