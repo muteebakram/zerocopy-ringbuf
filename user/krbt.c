@@ -55,14 +55,52 @@ int create_delete_ringbuf()
   uint64 buf1 = 0;
   const char name[16] = "muteeb";
 
-  // printf("my buf: %p\n", buf1);
-  // printf("my buf addr: %p\n", &buf1);
+  printf("my buf: %p\n", buf1);
+  printf("my buf addr: %p\n", &buf1);
   if (ringbuf(name, 1, &buf1) != 0)
     return -1;
-  
-  // printf("ringbuf1: %p\n", (buf1));
-  // printf("ringbuf1 &: %p\n", (&buf1));
+
+  printf("ringbuf1: %p\n", (buf1));
+  printf("ringbuf1 &: %p\n", (&buf1));
   if (ringbuf(name, 0, &buf1) != 0)
+    return -1;
+
+  return 0;
+}
+
+int create_two_delete_ringbuf_one()
+{
+  uint64 buf1;
+  const char name[16] = "muteeb";
+
+  if (ringbuf(name, 1, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name, 1, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name, 0, &buf1) != 0)
+    return -1;
+
+  return 0;
+}
+
+int create_two_delete_two_ringbuf()
+{
+  uint64 buf1;
+  uint64 buf2;
+  const char name[16] = "muteeb";
+
+  if (ringbuf(name, 1, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name, 1, &buf2) != 0)
+    return -1;
+
+  if (ringbuf(name, 0, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name, 0, &buf2) != 0)
     return -1;
 
   return 0;
@@ -110,10 +148,12 @@ int main(int argc, char *argv[])
   // printf("\nTEST: create_one_ringbuf: %d\n\n", create_one_ringbuf());
   // printf("\nTEST: create_two_ringbuf_same_name: %d\n\n", create_two_ringbuf_same_name());
   // printf("\nTEST: create_two_ringbuf_diff_name: %d\n\n", create_two_ringbuf_diff_name());
-  printf("\nTEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
+  // printf("\nTEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
   // printf("\nTEST: only_delete_ringbuf: %d\n\n", only_delete_ringbuf());
   // printf("\nTEST: max_ringbuf: %d\n\n", max_ringbuf());
   // printf("\nTEST: long_ringbuf_name: %d\n\n", long_ringbuf_name());
+  // printf("\nTEST: create_two_delete_ringbuf_one: %d\n\n", create_two_delete_ringbuf_one());
+  printf("\nTEST: create_two_delete_two_ringbuf: %d\n\n", create_two_delete_two_ringbuf());
 
   printf("goodbye\n");
   return 0;

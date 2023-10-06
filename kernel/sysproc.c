@@ -15,9 +15,9 @@ sys_ringbuf(void)
 
   argstr(0, name, 16);
   argint(1, &open);
-  arguint64(2, &uaddr);
+  argaddr(2, &uaddr);
 
-  return ringbuf(name, open, &uaddr);
+  return ringbuf(name, open, uaddr);
 }
 
 uint64

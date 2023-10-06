@@ -179,6 +179,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
+    // printf("unmap page: %p\n", a);
     if((pte = walk(pagetable, a, 0)) == 0)
       panic("uvmunmap: walk");
 
@@ -286,6 +287,7 @@ freewalk(pagetable_t pagetable)
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){
+      printf("freewalk: leaf %p, i: %d\n", (uint64)pte, i);
       panic("freewalk: leaf");
     }
   }

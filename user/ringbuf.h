@@ -15,7 +15,6 @@ struct user_ring_buf
 //   return __atomic_load_8(p, __ATOMIC_SEQ_CST);
 // }
 
-// ringbuf.c
 int ringbuf_open(void);
 int ringbuf_close(int);
 

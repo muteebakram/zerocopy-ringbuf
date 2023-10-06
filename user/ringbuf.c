@@ -8,6 +8,22 @@ const char *names[] = {"one", "two", "three", "four", "five", "six", "seven", "e
 
 struct user_ring_buf user_ring_bufs[10];
 
+void ringbuf_start_read(int ring_desc, char **addr, int *bytes)
+{
+}
+
+void ringbuf_finish_read(int ring_desc, int bytes)
+{
+}
+
+void ringbuf_start_write(int ring_desc, char **addr, int *bytes)
+{
+}
+
+void ringbuf_finish_write(int ring_desc, int bytes)
+{
+}
+
 int ringbuf_open()
 {
   int fd;
