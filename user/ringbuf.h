@@ -16,8 +16,8 @@ struct user_ring_buf
 // }
 
 // ringbuf.c
-int create_ringbuf(void);
-int delete_ringbuf(int);
+int ringbuf_open(void);
+int ringbuf_close(int);
 
 void ringbuf_start_read(int ring_desc, char **addr, int *bytes);
 void ringbuf_finish_read(int ring_desc, int bytes);

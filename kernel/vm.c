@@ -184,7 +184,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 
     // printf("va: %p, pte: %p\n", va, PTE2PA(*pte));
     if((*pte & PTE_V) == 0) {
-      // printf("uvmunmap: not mapped: %p\n", *pte);
+      printf("uvmunmap: not mapped: %p\n", a);
       panic("uvmunmap: not mapped");
     }
     if(PTE_FLAGS(*pte) == PTE_V)

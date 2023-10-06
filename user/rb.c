@@ -14,8 +14,8 @@
 
 int main()
 {
-    printf("running rb...\n");
-    int ret = create_ringbuf();
-    printf("create_ringbuf: %d", ret);
+    printf("Running rb...\n");
+    int ret = ringbuf_open();
+    printf("ringbuf_open: %d\n", ret);
     return ret;
 }

@@ -11,18 +11,13 @@ sys_ringbuf(void)
 {
   int open;
   char name[16];
-  uint64 addr = 0;
-  uint64 *uaddr = &addr;
+  uint64 uaddr;
 
   argstr(0, name, 16);
   argint(1, &open);
-  arguint64(2, uaddr);
+  arguint64(2, &uaddr);
 
-  // uint64 p = uaddr;
-  printf("sysproc name: %s\n", name);
-  printf("sysproc open: %p\n", open);
-  printf("sysproc uaddr: %p\n", *uaddr);
-  return ringbuf(name, open, uaddr);
+  return ringbuf(name, open, &uaddr);
 }
 
 uint64

@@ -55,13 +55,13 @@ int create_delete_ringbuf()
   uint64 buf1 = 0;
   const char name[16] = "muteeb";
 
-  printf("my buf: %p\n", buf1);
-  printf("my buf addr: %p\n", &buf1);
+  // printf("my buf: %p\n", buf1);
+  // printf("my buf addr: %p\n", &buf1);
   if (ringbuf(name, 1, &buf1) != 0)
     return -1;
   
-  printf("ringbuf1: %p\n", (buf1));
-  printf("ringbuf1 &: %p\n", (&buf1));
+  // printf("ringbuf1: %p\n", (buf1));
+  // printf("ringbuf1 &: %p\n", (&buf1));
   if (ringbuf(name, 0, &buf1) != 0)
     return -1;
 
