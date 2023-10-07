@@ -48,15 +48,20 @@ void ringbuf_start_read(int ring_desc, char *addr, int *bytes)
 
   rb = user_ring_bufs[ring_desc];
 
-  printf("book addr with book: %p\n", (uint64 *)rb.book);
-  struct book *book2 = (struct book *)rb.book;
-  book2->read_done = 2;
-  printf("book value with book: %p\n", book2->read_done);
+  uint64 *buf = (uint64 *)rb.buf;
+  struct book *book = (struct book *)rb.book;
 
-  uint64 rb_book_addr = *(uint64 *)rb.buf - (16 * PGSIZE);
+  uint64 read = load((int *)book->read_done);
+  uint64 write = load((int *)book->write_done);
 
-  struct book *book = (struct book *)rb_book_addr;
-  printf("book value with buf: %p\n", book->read_done);
+  // TODO Trying to write formula to get the read addr and how many bytes available.
+  read = read % (16 * PGSIZE);
+  write = write % (16 * PGSIZE);
+
+  addr = (char *)(*buf + read % 16);
+  bytes = (int *)(write - read);
+  printf("buf: %c\n", addr);
+  printf("book: %d\n", bytes);
 }
 
 void ringbuf_finish_read(int ring_desc, int bytes)
@@ -82,7 +87,6 @@ int ringbuf_open()
 {
   int rd;
   uint64 *buf = (uint64 *)user_ring_bufs[ringbuf_count].buf;
-
   if (ringbuf(names[ringbuf_count], 1, buf))
   {
     printf("Failed to open ringbuf.\n");
@@ -92,7 +96,7 @@ int ringbuf_open()
   /* Create and map kernel book to userspace book. */
 
   // Create a userspace book with values initialized to zero.
-  struct book book = {.read_done = 10, .write_done = 0};
+  struct book book = {.read_done = 0, .write_done = 512};
 
   // Map the book to particular book of ther user ringbufs
   user_ring_bufs[ringbuf_count].book = &book;
@@ -104,9 +108,9 @@ int ringbuf_open()
   memmove(book_addr, user_ring_bufs[ringbuf_count].book, sizeof(struct book));
 
   // To test if the book (virtual page book) has the userspace book.
-  struct book *book_test;
-  book_test = (struct book *)book_addr;
-  printf("ringbuf_open book value: %p\n", book_test->read_done);
+  // struct book *book_test;
+  // book_test = (struct book *)book_addr;
+  // printf("ringbuf_open book value: %p\n", book_test->read_done);
 
   // Now map the user ringbuf book to the book addr so that we can directly right to kernel mapped book with user_ring_buf.book
   user_ring_bufs[ringbuf_count].book = (void *)book_addr;
