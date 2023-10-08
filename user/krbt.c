@@ -170,13 +170,13 @@ int main(int argc, char *argv[])
   // printf("TEST: create_one_ringbuf: %d\n\n", create_one_ringbuf());
   // printf("TEST: create_two_ringbuf_same_name: %d\n\n", create_two_ringbuf_same_name());
   // printf("TEST: create_two_ringbuf_diff_name: %d\n\n", create_two_ringbuf_diff_name());
-  // printf("TEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
+  printf("TEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
   // printf("TEST: only_delete_ringbuf: %d\n\n", only_delete_ringbuf());
   // printf("TEST: max_ringbuf: %d\n\n", max_ringbuf());
   // printf("TEST: long_ringbuf_name: %d\n\n", long_ringbuf_name());
   // printf("TEST: create_two_delete_ringbuf_one: %d\n\n", create_two_delete_ringbuf_one());
   // printf("TEST: create_two_delete_two_ringbuf: %d\n\n", create_two_delete_two_ringbuf());
-  printf("TEST: create_two_delete_two_diff_ringbuf: %d\n\n", create_two_delete_two_diff_ringbuf());
+  // printf("TEST: create_two_delete_two_diff_ringbuf: %d\n\n", create_two_delete_two_diff_ringbuf());
 
   printf("goodbye\n");
   return 0;

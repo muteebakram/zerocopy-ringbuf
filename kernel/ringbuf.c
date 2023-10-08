@@ -7,6 +7,8 @@
 #include "defs.h"
 #include "ringbuf.h"
 
+#define KLOG 0
+
 int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contiguous_pages)
 {
   uint64 va, pa;
@@ -23,10 +25,11 @@ int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contig
     {
       // Physical address is not mapped and can be used to page allocation.
       ++count;
-      // printf("Found %d contiguous virtual pages. va: %p\n", count, va);
+      // if (KLOG) printf("Found %d contiguous virtual pages. va: %p\n", count, va);
       if (count == num_contiguous_pages)
       {
-        printf("Found %d contiguous virtual pages.\nStart: %p, End: %p\n", count, *base_va, va);
+        if (KLOG)
+          printf("Found %d contiguous virtual pages.\nStart: %p, End: %p\n", count, *base_va, va);
         found = 1;
         break;
       }
@@ -34,7 +37,7 @@ int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contig
     else
     {
       // Reset the base_va to va iterator to find next contiguous pages.
-      // printf("Reset %d contiguous virtual pages. va: %p\n", count, va);
+      // if (KLOG) printf("Reset %d contiguous virtual pages. va: %p\n", count, va);
       count = 0;
       *base_va = va;
     }
@@ -56,7 +59,8 @@ int mappage_to_book(struct ringbuf *rb, uint64 va)
     mem = kalloc(); // Returns phyiscal address of free memory (page).
     if (mem == 0)
     {
-      printf("Error: kalloc failed to find free page.\n");
+      if (KLOG)
+        printf("Error: kalloc failed to find free page.\n");
       uvmdealloc(pr->pagetable, va, PGSIZE);
       return -1;
     }
@@ -64,26 +68,30 @@ int mappage_to_book(struct ringbuf *rb, uint64 va)
     memset(mem, 0, PGSIZE);
     if (mappages(pr->pagetable, va, PGSIZE, (uint64)mem, PTE_R | PTE_W | PTE_U | PTE_X) != 0)
     {
-      printf("Error: Failed to map page %d of va: %p\n", va);
+      if (KLOG)
+        printf("Error: Failed to map page %d of va: %p\n", va);
       kfree(mem);
       uvmdealloc(pr->pagetable, va, PGSIZE);
       return -1;
     }
 
     rb->book = mem;
-    printf("Newly allocated book page. va: %p, pa: %p\n", va, rb->book);
+    if (KLOG)
+      printf("Newly allocated book page. va: %p, pa: %p\n", va, rb->book);
     return 0;
   }
   else
   {
     if (mappages(pr->pagetable, va, PGSIZE, (uint64)rb->book, PTE_R | PTE_W | PTE_U | PTE_X) != 0)
     {
-      printf("Error: Failed to map page %d of va: %p\n", va);
+      if (KLOG)
+        printf("Error: Failed to map page %d of va: %p\n", va);
       kfree(rb->book);
       uvmdealloc(pr->pagetable, va, PGSIZE);
       return -1;
     }
-    printf("Re-allocated book page for ringbuf '%s'. va: %p\n", rb->name, va);
+    if (KLOG)
+      printf("Re-allocated book page for ringbuf '%s'. va: %p\n", rb->name, va);
   }
 
   return 0;
@@ -98,7 +106,8 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
 
   if (rb->refcount < 0)
   {
-    printf("Error: Invalid refcount %d.", rb->refcount == 0);
+    if (KLOG)
+      printf("Error: Invalid refcount %d.", rb->refcount == 0);
     return -1;
   }
   else if (rb->refcount == 0) // When ref=0 need to create physical memory and map them to virtual pages twice.
@@ -113,7 +122,8 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
         mem = kalloc(); // Returns phyiscal address of free memory (page).
         if (mem == 0)
         {
-          printf("Error: kalloc failed to find free page.\n");
+          if (KLOG)
+            printf("Error: kalloc failed to find free page.\n");
           uvmdealloc(pr->pagetable, va, PGSIZE);
           return -1;
         }
@@ -130,13 +140,15 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
       // TODO handle unmap of previous pages.
       if (mappages(pr->pagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_X | PTE_U) != 0)
       {
-        printf("Error: Failed to map page %d of va: %p\n", i, va);
+        if (KLOG)
+          printf("Error: Failed to map page %d of va: %p\n", i, va);
         kfree((void *)pa);
         uvmdealloc(pr->pagetable, va, PGSIZE);
         return -1;
       }
 
-      printf("Newly allocated virtual page %d. va: %p, pa: %p\n", i, va, pa);
+      if (KLOG)
+        printf("Newly allocated virtual page %d. va: %p, pa: %p\n", i, va, pa);
     }
   }
   else // When ref>0 map only the new virtual pages to same physical memory.
@@ -148,12 +160,14 @@ int mappages_to_proc(struct ringbuf *rb, uint64 base_va, int num_pages)
 
       if (mappages(pr->pagetable, va, PGSIZE, pa, PTE_R | PTE_W | PTE_X | PTE_U) != 0)
       {
-        printf("Error: Failed to map page %d of va: %p\n", i, va);
+        if (KLOG)
+          printf("Error: Failed to map page %d of va: %p\n", i, va);
         kfree((void *)pa);
         uvmdealloc(pr->pagetable, va, PGSIZE);
         return -1;
       }
-      printf("Reallocated virtual page %d. va: %p, pa: %p\n", i, va, pa);
+      if (KLOG)
+        printf("Reallocated virtual page %d. va: %p, pa: %p\n", i, va, pa);
     }
   }
 
@@ -164,7 +178,8 @@ int validate_pages(pagetable_t pagetable, uint64 va)
 {
   if (walkaddr(pagetable, va) == 0)
   {
-    printf("Error: Virtual pages are not allocated. va: %p\n", va);
+    if (KLOG)
+      printf("Error: Virtual pages are not allocated. va: %p\n", va);
     return -1;
   }
 
@@ -179,7 +194,8 @@ int copyout_user_addr(uint64 base_va, uint64 user_addr)
   // Copy the base va to addr that will be used in user space.
   if (copyout(pr->pagetable, user_addr, (char *)&(base_va), sizeof(uint64)) < 0)
   {
-    printf("Failed to send base virtual address of contigious pages to userspace.\n");
+    if (KLOG)
+      printf("Failed to send base virtual address of contigious pages to userspace.\n");
     return -1;
   }
 
@@ -218,7 +234,8 @@ int create_ringbuf(const char *name, uint64 addr)
 
   struct proc *pr = myproc();
 
-  printf("Creating new ringbuf name '%s' for process %d.\n", name, pr->pid);
+  if (KLOG)
+    printf("Creating new ringbuf name '%s' for process %d.\n", name, pr->pid);
   struct ringbuf new_ringbuf;
   new_ringbuf.refcount = 0; // Set to zero as no process is mapped to ringbuf.
 
@@ -227,24 +244,28 @@ int create_ringbuf(const char *name, uint64 addr)
 
   if (find_contiguous_pages(pr->pagetable, &base_va, num_contiguous_pages) != 0)
   {
-    printf("Error: Could not find %d contiguous for '%s' ringbuf.", num_contiguous_pages, name);
+    if (KLOG)
+      printf("Error: Could not find %d contiguous for '%s' ringbuf.", num_contiguous_pages, name);
     return -1;
   }
 
   // Add a guard page i, e top of each ringbuf.
-  printf("Assigned ringbuf guard page address: %p\n", base_va);
+  if (KLOG)
+    printf("Assigned ringbuf guard page address: %p\n", base_va);
 
   // Map contigious pages to proc
   base_va = base_va - PGSIZE;
   if (mappages_to_proc(&new_ringbuf, base_va, 2 * RINGBUF_SIZE) != 0)
   {
-    printf("Error: Failed to map pages to process for ringbuf '%s'\n.", name);
+    if (KLOG)
+      printf("Error: Failed to map pages to process for ringbuf '%s'\n.", name);
     return -1;
   }
 
   if (validate_pages(pr->pagetable, base_va) != 0)
   {
-    printf("Error: Validate contiguous pages mapping for ringbuf '%s' failed.", name);
+    if (KLOG)
+      printf("Error: Validate contiguous pages mapping for ringbuf '%s' failed.", name);
     return -1;
   }
 
@@ -252,19 +273,22 @@ int create_ringbuf(const char *name, uint64 addr)
   book_va = (base_va - (2 * RINGBUF_SIZE * PGSIZE));
   if (mappage_to_book(&new_ringbuf, book_va) != 0)
   {
-    printf("Error: Failed to map page to book for ringbuf '%s'\n.", name);
+    if (KLOG)
+      printf("Error: Failed to map page to book for ringbuf '%s'\n.", name);
     return -1;
   }
 
   if (validate_pages(pr->pagetable, book_va) != 0)
   {
-    printf("Error: Validate book page mapping for ringbuf '%s' failed.", name);
+    if (KLOG)
+      printf("Error: Validate book page mapping for ringbuf '%s' failed.", name);
     return -1;
   }
 
   if (copyout_user_addr(base_va, addr) != 0)
   {
-    printf("Error: Failed to copyout user address for ringbuf '%s'\n", name);
+    if (KLOG)
+      printf("Error: Failed to copyout user address for ringbuf '%s'\n", name);
     return -1;
   }
 
@@ -273,7 +297,8 @@ int create_ringbuf(const char *name, uint64 addr)
   new_ringbuf.refcount += 1;
   ringbufs[ringbuf_index] = new_ringbuf;
 
-  printf("Successfully created ringbuf %d of name '%s'.\n", ringbuf_index, name);
+  if (KLOG)
+    printf("Successfully created ringbuf %d of name '%s'.\n", ringbuf_index, name);
   return 0;
 }
 
@@ -296,26 +321,31 @@ int append_ringbuf(const char *name, uint64 addr)
 
   if (!ringbuf_found)
   {
-    printf("Error: Failed to append to ringbuf. Could not find ringbuf %s.\n", name);
+    if (KLOG)
+      printf("Error: Failed to append to ringbuf. Could not find ringbuf %s.\n", name);
     return -1;
   }
 
-  printf("Appending to ringbuf name '%s' to process %d.\n", name, pr->pid);
+  if (KLOG)
+    printf("Appending to ringbuf name '%s' to process %d.\n", name, pr->pid);
   if (find_contiguous_pages(pr->pagetable, &base_va, num_contiguous_pages) != 0)
   {
-    printf("Error: Could not find %d contiguous for '%s' ringbuf.", num_contiguous_pages, name);
+    if (KLOG)
+      printf("Error: Could not find %d contiguous for '%s' ringbuf.", num_contiguous_pages, name);
     return -1;
   }
 
   // Add a guard page i, e top of each ringbuf.
   base_va = base_va - PGSIZE;
-  printf("Assigned ringbuf guard page address: %p\n", base_va);
+  if (KLOG)
+    printf("Assigned ringbuf guard page address: %p\n", base_va);
 
   // Map contigious pages to proc after the guard.
   base_va = base_va - PGSIZE;
   if (mappages_to_proc(rb, base_va, 2 * RINGBUF_SIZE) != 0)
   {
-    printf("Error: Failed to append ringbuf map pages to process.");
+    if (KLOG)
+      printf("Error: Failed to append ringbuf map pages to process.");
     return -1;
   }
 
@@ -323,18 +353,21 @@ int append_ringbuf(const char *name, uint64 addr)
   book_va = (base_va - (2 * RINGBUF_SIZE * PGSIZE));
   if (mappage_to_book(rb, book_va) != 0)
   {
-    printf("Error: Failed to map page to book. RB: %s\n", name);
+    if (KLOG)
+      printf("Error: Failed to map page to book. RB: %s\n", name);
     return -1;
   }
 
   if (copyout_user_addr(base_va, addr) != 0)
   {
-    printf("Error: Failed to append ringbuf copyout user address. RB: %s\n", name);
+    if (KLOG)
+      printf("Error: Failed to append ringbuf copyout user address. RB: %s\n", name);
     return -1;
   }
 
   rb->refcount++;
-  printf("Successfully appended to ringbuf '%s' for process %d. refcount: %d\n", name, pr->pid, rb->refcount);
+  if (KLOG)
+    printf("Successfully appended to ringbuf '%s' for process %d. refcount: %d\n", name, pr->pid, rb->refcount);
   return 0;
 }
 
@@ -370,7 +403,8 @@ int unmap_ringbuf(const char *name, uint64 addr)
 
   if (!ringbuf_found)
   {
-    printf("Error: Could not find ringbuf %s.\n", name);
+    if (KLOG)
+      printf("Error: Could not find ringbuf %s.\n", name);
     return -1;
   }
 
@@ -380,29 +414,34 @@ int unmap_ringbuf(const char *name, uint64 addr)
 
   uint64 usr_buf_pa = walkaddr(pr->pagetable, addr) + (uint64)(addr % 4096);
   uint64 usr_buf_va = *((uint64 *)usr_buf_pa);
-  // printf("usr_buf_addr: %p, usr_buf_pa: %p\nstart usr_buf_va: %p, end usr_buf_va: %p\n", addr, usr_buf_pa, usr_buf_va, usr_buf_va - (15 * PGSIZE));
+  // if (KLOG) printf("usr_buf_addr: %p, usr_buf_pa: %p\nstart usr_buf_va: %p, end usr_buf_va: %p\n", addr, usr_buf_pa, usr_buf_va, usr_buf_va - (15 * PGSIZE));
 
   if (validate_pages(pr->pagetable, usr_buf_va) != 0)
   {
-    printf("Error: Validate contiguous pages for ringbuf '%s' failed.\n", name);
+    if (KLOG)
+      printf("Error: Validate contiguous pages for ringbuf '%s' failed.\n", name);
     return -1;
   }
 
   usr_buf_va = usr_buf_va - ((2 * RINGBUF_SIZE) - 1) * PGSIZE; // Go 33 pages back i,e where 34 contigious pages are.
-  printf("Unmapping ringbuf %d '%s' from process %d. vaddr: %p\n", ringbuf_count, rb->name, pr->pid, usr_buf_va);
+  if (KLOG)
+    printf("Unmapping ringbuf %d '%s' from process %d. vaddr: %p\n", ringbuf_count, rb->name, pr->pid, usr_buf_va);
   uvmunmap(pr->pagetable, usr_buf_va, 2 * RINGBUF_SIZE, 0);
 
-  printf("Unmapping ringbuf book page: %p\n", usr_buf_va - PGSIZE);
+  if (KLOG)
+    printf("Unmapping ringbuf book page: %p\n", usr_buf_va - PGSIZE);
   uvmunmap(pr->pagetable, usr_buf_va - PGSIZE, 1, 0);
 
   if (rb->refcount == 0)
   {
     unmap_ringbuf_pmem(rb); // For last ringbuf clear the physical memory.
-    printf("Successfully deleted ringbuf %d from ringbufs. # ringbufs: %d\n", ringbuf_count, get_ringbuf_index());
+    if (KLOG)
+      printf("Successfully deleted ringbuf %d from ringbufs. # ringbufs: %d\n", ringbuf_count, get_ringbuf_index());
     return 0;
   }
 
-  printf("Successfully unmapped from ringbuf '%s'. # ringbufs: %d, refcount: %d\n\n", rb->name, get_ringbuf_index(), rb->refcount);
+  if (KLOG)
+    printf("Successfully unmapped from ringbuf '%s'. # ringbufs: %d, refcount: %d\n\n", rb->name, get_ringbuf_index(), rb->refcount);
   return 0;
 }
 
@@ -417,16 +456,19 @@ int ringbuf(const char *name, int open, uint64 addr)
   ringbuf_count = get_ringbuf_index();
   if (ringbuf_count >= MAX_RINGBUFS)
   {
-    printf("Maximum # of ringbuf are allocated. Ringbufs count: %d\n", ringbuf_count);
+    if (KLOG)
+      printf("Maximum # of ringbuf are allocated. Ringbufs count: %d\n", ringbuf_count);
     return -1;
   }
-  printf("\nCurrent number of ringbufs: %d\n", ringbuf_count);
+  if (KLOG)
+    printf("\nCurrent number of ringbufs: %d\n", ringbuf_count);
 
   // Step 2: Check if ringbuf name is greater than 16.
   int name_len = strlen(name);
   if (name_len > 16)
   {
-    printf("Error: Cannot create ringbuf name '%s' is too long (%d). Allowed: %d \n", name, name_len, RINGBUF_NAME_LEN);
+    if (KLOG)
+      printf("Error: Cannot create ringbuf name '%s' is too long (%d). Allowed: %d \n", name, name_len, RINGBUF_NAME_LEN);
     return -1;
   }
 
@@ -444,13 +486,15 @@ int ringbuf(const char *name, int open, uint64 addr)
   {
     if (!ringbuf_exists && create_ringbuf(name, addr) != 0)
     {
-      printf("Error: Failed to create new ringbuf '%s'\n", name);
+      if (KLOG)
+        printf("Error: Failed to create new ringbuf '%s'\n", name);
       release(&ringbuf_lock);
       return -1;
     }
     else if (ringbuf_exists && append_ringbuf(name, addr) != 0)
     {
-      printf("Error: Failed to append to ringbuf '%s'\n", name);
+      if (KLOG)
+        printf("Error: Failed to append to ringbuf '%s'\n", name);
       release(&ringbuf_lock);
       return -1;
     }
@@ -459,7 +503,8 @@ int ringbuf(const char *name, int open, uint64 addr)
   {
     if (unmap_ringbuf(name, addr) != 0)
     {
-      printf("Error: Failed to unmap ringbuf '%s'\n", name);
+      if (KLOG)
+        printf("Error: Failed to unmap ringbuf '%s'\n", name);
       release(&ringbuf_lock);
       return -1;
     }
