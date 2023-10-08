@@ -8,9 +8,9 @@ int main()
     int rd = ringbuf_open();
     printf("ringbuf_open rd: %d\n", rd);
 
-    char x[10];
-    int bytes = 10;
-    ringbuf_start_read(rd, x, &bytes);
+    // char x[10];
+    // int bytes = 10;
+    // ringbuf_start_read(rd, x, &bytes);
 
     int ret = ringbuf_close(rd);
     printf("ringbuf_close ret: %d\n", ret);

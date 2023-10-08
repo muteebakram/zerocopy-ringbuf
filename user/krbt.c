@@ -106,6 +106,28 @@ int create_two_delete_two_ringbuf()
   return 0;
 }
 
+int create_two_delete_two_diff_ringbuf()
+{
+  uint64 buf1;
+  uint64 buf2;
+  const char name1[16] = "muteeb";
+  const char name2[16] = "gaurav";
+
+  if (ringbuf(name1, 1, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name2, 1, &buf2) != 0)
+    return -1;
+
+  if (ringbuf(name1, 0, &buf1) != 0)
+    return -1;
+
+  if (ringbuf(name2, 0, &buf2) != 0)
+    return -1;
+
+  return 0;
+}
+
 int only_delete_ringbuf()
 {
   uint64 buf1;
@@ -145,15 +167,16 @@ int long_ringbuf_name()
 
 int main(int argc, char *argv[])
 {
-  // printf("\nTEST: create_one_ringbuf: %d\n\n", create_one_ringbuf());
-  // printf("\nTEST: create_two_ringbuf_same_name: %d\n\n", create_two_ringbuf_same_name());
-  // printf("\nTEST: create_two_ringbuf_diff_name: %d\n\n", create_two_ringbuf_diff_name());
-  // printf("\nTEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
-  // printf("\nTEST: only_delete_ringbuf: %d\n\n", only_delete_ringbuf());
-  // printf("\nTEST: max_ringbuf: %d\n\n", max_ringbuf());
-  // printf("\nTEST: long_ringbuf_name: %d\n\n", long_ringbuf_name());
-  // printf("\nTEST: create_two_delete_ringbuf_one: %d\n\n", create_two_delete_ringbuf_one());
-  printf("\nTEST: create_two_delete_two_ringbuf: %d\n\n", create_two_delete_two_ringbuf());
+  // printf("TEST: create_one_ringbuf: %d\n\n", create_one_ringbuf());
+  // printf("TEST: create_two_ringbuf_same_name: %d\n\n", create_two_ringbuf_same_name());
+  // printf("TEST: create_two_ringbuf_diff_name: %d\n\n", create_two_ringbuf_diff_name());
+  // printf("TEST: create_delete_ringbuf: %d\n\n", create_delete_ringbuf());
+  // printf("TEST: only_delete_ringbuf: %d\n\n", only_delete_ringbuf());
+  // printf("TEST: max_ringbuf: %d\n\n", max_ringbuf());
+  // printf("TEST: long_ringbuf_name: %d\n\n", long_ringbuf_name());
+  // printf("TEST: create_two_delete_ringbuf_one: %d\n\n", create_two_delete_ringbuf_one());
+  // printf("TEST: create_two_delete_two_ringbuf: %d\n\n", create_two_delete_two_ringbuf());
+  printf("TEST: create_two_delete_two_diff_ringbuf: %d\n\n", create_two_delete_two_diff_ringbuf());
 
   printf("goodbye\n");
   return 0;
