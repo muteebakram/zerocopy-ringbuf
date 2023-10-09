@@ -110,7 +110,7 @@ void ringbuf_start_write(int ring_desc, char **addr, int *bytes)
   keep = (struct book *)rb->book;
 
   printf("buf: %s\n", buf);
-
+  
   read = load(&keep->read_done);
   write = load(&keep->write_done);
 

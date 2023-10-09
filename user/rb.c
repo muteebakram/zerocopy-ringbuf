@@ -11,7 +11,7 @@ int main()
     int i, rd, pid, child_rc, clocks;
 
     printf("Filling buffer...");
-        for (i = 0; i < SIZE; i++)
+    for (i = 0; i < SIZE; i++)
     {
         write_buf[i] = 'm'; // m will be written to ringbuf.
         read_buf[i] = 'g';  // data from ringbuf is transferred to read_buf.
@@ -28,7 +28,6 @@ int main()
 
         char *write_addr = 0;
         int bytes = 0, total_write = 0;
-        printf("in child\n\n\n");
 
         while (total_write < SIZE)
         {
