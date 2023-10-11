@@ -5,18 +5,17 @@
 
 int serial_read_write()
 {
-    // const char name[16] = "muteeb";
-
-    if (ringbuf_open(0) != 0)
+    int rd1 = ringbuf_open("muteeb"), rd2 = ringbuf_open("muteeb");
+    if (rd1 < 0)
         return -1;
 
-    if (ringbuf_open(0) != 0)
+    if (rd2 < 0)
         return -1;
 
-    if (ringbuf_close(0) != 0)
+    if (ringbuf_close(rd1, "muteeb") != 0)
         return -1;
 
-    if (ringbuf_close(0) != 0)
+    if (ringbuf_close(rd2, "muteeb") != 0)
         return -1;
 
     return 0;

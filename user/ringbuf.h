@@ -15,8 +15,8 @@ struct book
   uint64 read_done, write_done;
 };
 
-int ringbuf_open(void);
-int ringbuf_close(int);
+int ringbuf_open(char *name);
+int ringbuf_close(int rd, char *name);
 
 void ringbuf_start_read(int ring_desc, char **addr, int *bytes);
 void ringbuf_finish_read(int ring_desc, int bytes);

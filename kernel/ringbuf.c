@@ -7,7 +7,7 @@
 #include "defs.h"
 #include "ringbuf.h"
 
-#define KLOG 0
+#define KLOG 1
 
 int find_contiguous_pages(pagetable_t pagetable, uint64 *base_va, int num_contiguous_pages)
 {
@@ -199,6 +199,8 @@ int copyout_user_addr(uint64 base_va, uint64 user_addr)
     return -1;
   }
 
+  if (KLOG)
+    printf("Copyout addr to userspace: %p\n", base_va);
   return 0;
 }
 
@@ -447,28 +449,31 @@ int unmap_ringbuf(const char *name, uint64 addr)
 
 int ringbuf(const char *name, int open, uint64 addr)
 {
+  acquire(&ringbuf_lock);
+
   struct ringbuf *rb;
   int ringbuf_exists = 0, ringbuf_count = 0;
-
-  acquire(&ringbuf_lock);
 
   // Step 1: Check if maximum ringbuf are already allocated.
   ringbuf_count = get_ringbuf_index();
   if (ringbuf_count >= MAX_RINGBUFS)
   {
     if (KLOG)
-      printf("Maximum # of ringbuf are allocated. Ringbufs count: %d\n", ringbuf_count);
+      printf("Maximum ringbuf are allocated. Ringbufs count: %d\n", ringbuf_count);
+    release(&ringbuf_lock);
     return -1;
   }
+
   if (KLOG)
     printf("\nCurrent number of ringbufs: %d\n", ringbuf_count);
 
   // Step 2: Check if ringbuf name is greater than 16.
   int name_len = strlen(name);
-  if (name_len > 16)
+  if (name_len > RINGBUF_NAME_LEN)
   {
     if (KLOG)
       printf("Error: Cannot create ringbuf name '%s' is too long (%d). Allowed: %d \n", name, name_len, RINGBUF_NAME_LEN);
+    release(&ringbuf_lock);
     return -1;
   }
 
